@@ -18,7 +18,7 @@ func validateHandler(w http.ResponseWriter, r *http.Request) {
 	chirp := parameters{}
 	err := decoder.Decode(&chirp)
 	if err != nil {
-		respondWithError(w, 500, "Error decoding posted json")
+		respondWithError(w, 400, "Error decoding posted json")
 		return
 	}
 

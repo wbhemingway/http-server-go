@@ -1,12 +1,16 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"sync/atomic"
+	"syscall"
+	"time"
 
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
@@ -15,12 +19,14 @@ import (
 
 type apiConfig struct {
 	fileserverHits atomic.Int32
-	queries        *database.Queries
+	db        *database.Queries
+	platform string
 }
 
 func main() {
 	godotenv.Load()
 	dbURL := os.Getenv("DB_URL")
+	platform := os.Getenv("PLATFORM")
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatal("error making database conection")
@@ -31,7 +37,8 @@ func main() {
 	const port = "8080"
 
 	apiCfg := &apiConfig{
-		queries: dbQueries,
+		db: dbQueries,
+		platform: platform,
 	}
 	mux := http.NewServeMux()
 	mux.Handle(
@@ -45,12 +52,29 @@ func main() {
 	mux.HandleFunc("GET /admin/metrics", apiCfg.metricsHandler)
 	mux.HandleFunc("POST /admin/reset", apiCfg.resetHandler)
 	mux.HandleFunc("POST /api/validate_chirp", validateHandler)
+	mux.HandleFunc("POST /api/users", apiCfg.addUserHandler)
 	serve := http.Server{
 		Addr:    ":8080",
 		Handler: mux,
 	}
 
-	fmt.Println("Chirpy Server Started!")
-	serve.ListenAndServe()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	go func() {
+		fmt.Printf("Chirpy Server Started on port %s!\n", port)
+		if err := serve.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Server error: %v", err)
+		}
+	}()
+	
+	<-ctx.Done()
+	fmt.Println("\nShutting down gracefully...")
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := serve.Shutdown(shutdownCtx); err != nil {
+		log.Fatalf("Server shutdown failed: %v", err)
+	}
+	
 	fmt.Println("Chirpy Server Stopped!")
 }
