@@ -26,14 +26,14 @@ func (cfg *apiConfig) addUserHandler(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&params)
 	if err != nil {
 		log.Println("DecodeParams error:", err)
-		respondWithError(w, 400, "Error decoding posted json")
+		respondWithError(w, http.StatusBadRequest, "Error decoding posted json")
 		return
 	}
 
 	dbUser, err := cfg.db.CreateUser(r.Context(), params.Email)
 	if err != nil {
 		log.Println("Error creating user:", err)
-		respondWithError(w, 500, "Error creating user")
+		respondWithError(w, http.StatusInternalServerError, "Error creating user")
 		return
 	}
 	
@@ -43,5 +43,5 @@ func (cfg *apiConfig) addUserHandler(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt: dbUser.UpdatedAt,
 		Email: dbUser.Email,
 	}
-	respondWithJson(w, 201, user)
+	respondWithJson(w, http.StatusCreated, user)
 }

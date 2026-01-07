@@ -19,8 +19,8 @@ import (
 
 type apiConfig struct {
 	fileserverHits atomic.Int32
-	db        *database.Queries
-	platform string
+	db             *database.Queries
+	platform       string
 }
 
 func main() {
@@ -37,7 +37,7 @@ func main() {
 	const port = "8080"
 
 	apiCfg := &apiConfig{
-		db: dbQueries,
+		db:       dbQueries,
 		platform: platform,
 	}
 	mux := http.NewServeMux()
@@ -52,6 +52,7 @@ func main() {
 	mux.HandleFunc("GET /admin/metrics", apiCfg.metricsHandler)
 	mux.HandleFunc("POST /admin/reset", apiCfg.resetHandler)
 	mux.HandleFunc("POST /api/chirps", apiCfg.addChirpHandler)
+	mux.HandleFunc("GET /api/chirps", apiCfg.getChirpsHandler)
 	mux.HandleFunc("POST /api/users", apiCfg.addUserHandler)
 	serve := http.Server{
 		Addr:    ":8080",
@@ -67,7 +68,7 @@ func main() {
 			log.Fatalf("Server error: %v", err)
 		}
 	}()
-	
+
 	<-ctx.Done()
 	fmt.Println("\nShutting down gracefully...")
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -75,6 +76,6 @@ func main() {
 	if err := serve.Shutdown(shutdownCtx); err != nil {
 		log.Fatalf("Server shutdown failed: %v", err)
 	}
-	
+
 	fmt.Println("Chirpy Server Stopped!")
 }

@@ -31,7 +31,7 @@ func (cfg *apiConfig) addChirpHandler(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&params)
 	if err != nil {
 		log.Println("DecodeParams error:", err)
-		respondWithError(w, 400, "Error decoding posted json")
+		respondWithError(w, http.StatusBadRequest, "Error decoding posted json")
 		return
 	}
 	dbParams := database.CreateChirpParams{
@@ -42,7 +42,7 @@ func (cfg *apiConfig) addChirpHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// add proper error checking to see if it's 400 or 500 error
 		log.Println("Error creating chirp:", err)
-		respondWithError(w, 500, "Error creating user")
+		respondWithError(w, http.StatusInternalServerError, "Error creating user")
 		return
 	}
 
@@ -54,7 +54,28 @@ func (cfg *apiConfig) addChirpHandler(w http.ResponseWriter, r *http.Request) {
 		UserId:    dbChirp.UserID,
 	}
 
-	respondWithJson(w, 201, chirp)
+	respondWithJson(w, http.StatusCreated, chirp)
+}
+
+func (cfg *apiConfig) getChirpsHandler(w http.ResponseWriter, r *http.Request) {
+	dbChirps, err := cfg.db.GetChirps(r.Context())
+	if err != nil {
+		log.Println("Error getting users:", err)
+		respondWithError(w, http.StatusInternalServerError, "Error getting users")
+		return
+	}
+
+	chirps := make([]Chirp, len(dbChirps))
+	for i, chirp := range dbChirps {
+		chirps[i] = Chirp{
+			Id:        chirp.ID,
+			CreatedAt: chirp.CreatedAt,
+			UpdatedAt: chirp.UpdatedAt,
+			Body:      chirp.Body,
+			UserId:    chirp.UserID,
+		}
+	}
+	respondWithJson(w, http.StatusOK, chirps)
 }
 
 func cleanBody(msg string) string {
