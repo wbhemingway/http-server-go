@@ -78,6 +78,32 @@ func (cfg *apiConfig) getChirpsHandler(w http.ResponseWriter, r *http.Request) {
 	respondWithJson(w, http.StatusOK, chirps)
 }
 
+func (cfg *apiConfig) getChirpHandler(w http.ResponseWriter, r *http.Request) {
+	idString := r.PathValue("chirpID")
+	id, err := uuid.Parse(idString)
+	if err != nil {
+		log.Println("Error Parsing uuid:", err)
+		respondWithError(w, http.StatusBadRequest, "Bad request sent")
+		return
+	}
+
+	dbChirp, err := cfg.db.GetChirp(r.Context(), id)
+	if err != nil {
+		log.Println("Error getting uuid from db:", err)
+		respondWithError(w, http.StatusNotFound, "Id not found")
+		return
+	}
+	chirp := Chirp{
+		Id:        dbChirp.ID,
+		CreatedAt: dbChirp.CreatedAt,
+		UpdatedAt: dbChirp.UpdatedAt,
+		Body:      dbChirp.Body,
+		UserId:    dbChirp.UserID,
+	}
+
+	respondWithJson(w, http.StatusOK, chirp)
+}
+
 func cleanBody(msg string) string {
 	badWords := []string{"kerfuffle", "sharbert", "fornax"}
 	cens := "****"

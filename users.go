@@ -9,16 +9,15 @@ import (
 	"github.com/google/uuid"
 )
 
-
-type User struct{
-	Id uuid.UUID `json:"id"`
+type User struct {
+	Id        uuid.UUID `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-	Email string `json:"email"`
+	Email     string    `json:"email"`
 }
 
 func (cfg *apiConfig) addUserHandler(w http.ResponseWriter, r *http.Request) {
-	type parameters struct{
+	type parameters struct {
 		Email string `json:"email"`
 	}
 	decoder := json.NewDecoder(r.Body)
@@ -36,12 +35,12 @@ func (cfg *apiConfig) addUserHandler(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, "Error creating user")
 		return
 	}
-	
+
 	user := User{
-		Id: dbUser.ID,
+		Id:        dbUser.ID,
 		CreatedAt: dbUser.CreatedAt,
 		UpdatedAt: dbUser.UpdatedAt,
-		Email: dbUser.Email,
+		Email:     dbUser.Email,
 	}
 	respondWithJson(w, http.StatusCreated, user)
 }
