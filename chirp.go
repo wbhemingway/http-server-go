@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/wbhemingway/http-server-go/internal/auth"
 	"github.com/wbhemingway/http-server-go/internal/database"
 )
 
@@ -23,12 +24,22 @@ type Chirp struct {
 func (cfg *apiConfig) addChirpHandler(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		Body   string    `json:"body"`
-		UserId uuid.UUID `json:"user_id"`
 	}
-
+	
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Couldn't find JWT")
+		return
+	}
+	userID, err := auth.ValidateJWT(token, cfg.jwtSecret)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Couldn't validate JWT")
+		return
+	}
+		
 	decoder := json.NewDecoder(r.Body)
 	params := parameters{}
-	err := decoder.Decode(&params)
+	err = decoder.Decode(&params)
 	if err != nil {
 		log.Println("DecodeParams error:", err)
 		respondWithError(w, http.StatusBadRequest, "Error decoding posted json")
@@ -36,7 +47,7 @@ func (cfg *apiConfig) addChirpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	dbParams := database.CreateChirpParams{
 		Body:   cleanBody(params.Body),
-		UserID: params.UserId,
+		UserID: userID,
 	}
 	dbChirp, err := cfg.db.CreateChirp(r.Context(), dbParams)
 	if err != nil {
