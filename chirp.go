@@ -28,12 +28,12 @@ func (cfg *apiConfig) addChirpHandler(w http.ResponseWriter, r *http.Request) {
 	
 	token, err := auth.GetBearerToken(r.Header)
 	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "Couldn't find JWT")
+		respondWithError(w, http.StatusUnauthorized, "Couldn't find token")
 		return
 	}
 	userID, err := auth.ValidateJWT(token, cfg.jwtSecret)
 	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "Couldn't validate JWT")
+		respondWithError(w, http.StatusUnauthorized, "Couldn't validate token")
 		return
 	}
 		

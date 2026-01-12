@@ -39,8 +39,8 @@ func main() {
 	const port = "8080"
 
 	apiCfg := &apiConfig{
-		db:       dbQueries,
-		platform: platform,
+		db:        dbQueries,
+		platform:  platform,
 		jwtSecret: secret,
 	}
 	mux := http.NewServeMux()
@@ -59,6 +59,8 @@ func main() {
 	mux.HandleFunc("POST /api/users", apiCfg.addUserHandler)
 	mux.HandleFunc("GET /api/chirps/{chirpID}", apiCfg.getChirpHandler)
 	mux.HandleFunc("POST /api/login", apiCfg.loginHander)
+	mux.HandleFunc("POST /api/refresh", apiCfg.refreshHandler)
+	mux.HandleFunc("POST /api/revoke", apiCfg.revokeHandler)
 	serve := http.Server{
 		Addr:    ":8080",
 		Handler: mux,
