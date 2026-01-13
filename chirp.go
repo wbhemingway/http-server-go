@@ -23,9 +23,9 @@ type Chirp struct {
 
 func (cfg *apiConfig) addChirpHandler(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Body   string    `json:"body"`
+		Body string `json:"body"`
 	}
-	
+
 	token, err := auth.GetBearerToken(r.Header)
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, "Couldn't find token")
@@ -36,7 +36,7 @@ func (cfg *apiConfig) addChirpHandler(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusUnauthorized, "Couldn't validate token")
 		return
 	}
-		
+
 	decoder := json.NewDecoder(r.Body)
 	params := parameters{}
 	err = decoder.Decode(&params)
@@ -126,4 +126,45 @@ func cleanBody(msg string) string {
 	}
 	cleanedMsg := strings.Join(words, " ")
 	return cleanedMsg
+}
+
+func (cfg *apiConfig) deleteChirpHandler(w http.ResponseWriter, r *http.Request) {
+	idString := r.PathValue("chirpID")
+	id, err := uuid.Parse(idString)
+	if err != nil {
+		log.Println("Error Parsing uuid:", err)
+		respondWithError(w, http.StatusBadRequest, "Bad request sent")
+		return
+	}
+
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Couldn't find token")
+		return
+	}
+
+	userID, err := auth.ValidateJWT(token, cfg.jwtSecret)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Couldn't validate token")
+		return
+	}
+
+	chirp, err := cfg.db.GetChirp(r.Context(), id)
+	if err != nil {
+		respondWithError(w, http.StatusNotFound, "Could not find chirp with provided id")
+		return
+	}
+
+	if chirp.UserID != userID {
+		respondWithError(w, http.StatusForbidden, "You are not authorized to delete this chirp")
+		return
+	}
+
+	err = cfg.db.DeleteChirp(r.Context(), id)
+	if err != nil {
+		respondWithError(w, http.StatusNotFound, "Could not find chirp with provided id")
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

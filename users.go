@@ -59,3 +59,58 @@ func (cfg *apiConfig) addUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	respondWithJson(w, http.StatusCreated, user)
 }
+
+func (cfg *apiConfig) updateUserHandler(w http.ResponseWriter, r *http.Request) {
+	type parameters struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Couldn't find token")
+		return
+	}
+	userID, err := auth.ValidateJWT(token, cfg.jwtSecret)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Couldn't validate token")
+		return
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	params := parameters{}
+	err = decoder.Decode(&params)
+	if err != nil {
+		log.Println("DecodeParams error:", err)
+		respondWithError(w, http.StatusBadRequest, "Error decoding posted json")
+		return
+	}
+
+	hashedPassword, err := auth.HashPassword(params.Password)
+	if err != nil {
+		log.Println("Hashing password error:", err)
+		respondWithError(w, http.StatusBadRequest, "Error hashing given password")
+		return
+	}
+
+	dbParams := database.UpdateUserParams{
+		ID:             userID,
+		Email:          params.Email,
+		HashedPassword: hashedPassword,
+	}
+
+	updatedUser, err := cfg.db.UpdateUser(r.Context(), dbParams)
+	if err != nil {
+		log.Println("Error updating user:", err)
+		respondWithError(w, http.StatusInternalServerError, "Error updating user")
+		return
+	}
+
+	user := User{
+		Id:        updatedUser.ID,
+		CreatedAt: updatedUser.CreatedAt,
+		UpdatedAt: updatedUser.UpdatedAt,
+		Email:     updatedUser.Email,
+	}
+	respondWithJson(w, http.StatusOK, user)
+
+}
