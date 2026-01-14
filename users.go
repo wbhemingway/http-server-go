@@ -17,6 +17,7 @@ type User struct {
 	UpdatedAt      time.Time `json:"updated_at"`
 	Email          string    `json:"email"`
 	HashedPassword string    `json:"hashed_password"`
+	IsChirpyRed    bool      `json:"is_chirpy_red"`
 }
 
 func (cfg *apiConfig) addUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -50,13 +51,7 @@ func (cfg *apiConfig) addUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := User{
-		Id:             dbUser.ID,
-		CreatedAt:      dbUser.CreatedAt,
-		UpdatedAt:      dbUser.UpdatedAt,
-		Email:          dbUser.Email,
-		HashedPassword: dbUser.HashedPassword,
-	}
+	user := databaseUsertoUser(dbUser)
 	respondWithJson(w, http.StatusCreated, user)
 }
 
@@ -105,12 +100,17 @@ func (cfg *apiConfig) updateUserHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	user := User{
-		Id:        updatedUser.ID,
-		CreatedAt: updatedUser.CreatedAt,
-		UpdatedAt: updatedUser.UpdatedAt,
-		Email:     updatedUser.Email,
-	}
+	user := databaseUsertoUser(updatedUser)
 	respondWithJson(w, http.StatusOK, user)
+}
 
+func databaseUsertoUser(dbUser database.User) User {
+	user := User{
+		Id:          dbUser.ID,
+		CreatedAt:   dbUser.CreatedAt,
+		UpdatedAt:   dbUser.UpdatedAt,
+		Email:       dbUser.Email,
+		IsChirpyRed: dbUser.IsChirpyRed,
+	}
+	return user
 }

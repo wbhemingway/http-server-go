@@ -74,12 +74,7 @@ func (cfg *apiConfig) loginHander(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := User{
-		Id:        dbUser.ID,
-		CreatedAt: dbUser.CreatedAt,
-		UpdatedAt: dbUser.UpdatedAt,
-		Email:     dbUser.Email,
-	}
+	user := databaseUsertoUser(dbUser)
 	respondWithJson(w, http.StatusOK, response{
 		User:         user,
 		Token:        accessToken,
