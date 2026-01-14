@@ -75,9 +75,20 @@ func (cfg *apiConfig) getChirpsHandler(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, "Error getting users")
 		return
 	}
+	authString := r.URL.Query().Get("author_id")
+	authID := uuid.Nil
+	if authString != "" {
+		authID, err = uuid.Parse(authString)
+		if err != nil {
+			respondWithError(w, http.StatusBadRequest, "Bad id given in query.")
+		}
+	}
 
 	chirps := make([]Chirp, len(dbChirps))
 	for i, chirp := range dbChirps {
+		if authID != uuid.Nil && chirp.UserID != authID {
+			continue
+		}
 		chirps[i] = Chirp{
 			Id:        chirp.ID,
 			CreatedAt: chirp.CreatedAt,
