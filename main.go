@@ -22,6 +22,7 @@ type apiConfig struct {
 	db             *database.Queries
 	platform       string
 	jwtSecret      string
+	polkaAPIKey    string
 }
 
 func main() {
@@ -29,6 +30,7 @@ func main() {
 	dbURL := os.Getenv("DB_URL")
 	platform := os.Getenv("PLATFORM")
 	secret := os.Getenv("JWT_SECRET")
+	polkaAPIKey := os.Getenv("POLKA_KEY")
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatal("error making database conection")
@@ -42,6 +44,7 @@ func main() {
 		db:        dbQueries,
 		platform:  platform,
 		jwtSecret: secret,
+		polkaAPIKey: polkaAPIKey,
 	}
 	mux := http.NewServeMux()
 	mux.Handle(
@@ -66,9 +69,9 @@ func main() {
 	mux.HandleFunc("POST /api/login", apiCfg.loginHander)
 	mux.HandleFunc("POST /api/refresh", apiCfg.refreshHandler)
 	mux.HandleFunc("POST /api/revoke", apiCfg.revokeHandler)
-	
+
 	mux.HandleFunc("POST /api/polka/webhooks", apiCfg.polkaHandler)
-	
+
 	serve := http.Server{
 		Addr:    ":8080",
 		Handler: mux,

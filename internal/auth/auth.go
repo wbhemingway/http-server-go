@@ -82,11 +82,11 @@ func GetBearerToken(headers http.Header) (string, error) {
 	if authHeader == "" {
 		return "", fmt.Errorf("Authorization header missing")
 	}
-	
+
 	if !strings.HasPrefix(authHeader, "Bearer ") {
 		return "", fmt.Errorf("Bearer missing")
 	}
-	
+
 	return strings.TrimPrefix(authHeader, "Bearer "), nil
 }
 
@@ -99,4 +99,17 @@ func MakeRefreshToken() (string, error) {
 
 	token := hex.EncodeToString(buf)
 	return token, nil
+}
+
+func GetAPIKey(headers http.Header) (string, error) {
+	authHeader := headers.Get("Authorization")
+	if authHeader == "" {
+		return "", fmt.Errorf("Authorization header missing")
+	}
+
+	if !strings.HasPrefix(authHeader, "ApiKey ") {
+		return "", fmt.Errorf("ApiKey missing")
+	}
+
+	return strings.TrimPrefix(authHeader, "ApiKey "), nil
 }

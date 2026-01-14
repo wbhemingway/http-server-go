@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/wbhemingway/http-server-go/internal/auth"
 )
 
 func (cfg *apiConfig) polkaHandler(w http.ResponseWriter, r *http.Request) {
@@ -15,10 +16,19 @@ func (cfg *apiConfig) polkaHandler(w http.ResponseWriter, r *http.Request) {
 			UserID uuid.UUID `json:"user_id"`
 		} `json:"data"`
 	}
+	apiKey, err := auth.GetAPIKey(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Couldn't find token")
+		return
+	}
+
+	if apiKey != cfg.polkaAPIKey {
+		respondWithError(w, http.StatusUnauthorized, "You are not authorized for this request")
+	}
 
 	decoder := json.NewDecoder(r.Body)
 	params := parameters{}
-	err := decoder.Decode(&params)
+	err = decoder.Decode(&params)
 	if err != nil {
 		log.Println("DecodeParams error:", err)
 		respondWithError(w, http.StatusBadRequest, "Error decoding posted json")
